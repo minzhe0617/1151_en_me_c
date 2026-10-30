@@ -1,876 +1,1578 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Working English 1 - 期中考克漏字 (Cloze Test) 全真模擬練習</title>
+    <title>Working English 1 期中考克漏字與文法全考點刷題系統</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        purpleAccent: {
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            600: '#9333ea',
+                            700: '#7e22ce',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js for lightweight interactive state management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .blank-highlight {
-            display: inline-block;
-            padding: 2px 8px;
-            margin: 0 2px;
+        [x-cloak] { display: none !important; }
+        .purple-highlight {
             background-color: #f3e8ff;
             color: #6b21a8;
-            border-bottom: 2px solid #9333ea;
-            border-radius: 4px;
             font-weight: 600;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            border: 1px solid #d8b4fe;
         }
-        .blank-answered {
-            background-color: #dbeafe;
-            color: #1e40af;
-            border-bottom-color: #2563eb;
-        }
-        .blank-correct {
-            background-color: #dcfce7;
-            color: #166534;
-            border-bottom-color: #16a34a;
-        }
-        .blank-incorrect {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border-bottom-color: #dc2626;
+        .cloze-blank {
+            display: inline-block;
+            min-width: 4rem;
+            border-bottom: 2px solid #2563eb;
+            text-align: center;
+            font-weight: 700;
+            color: #1d4ed8;
+            padding: 0 0.25rem;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="h-full text-slate-800 bg-slate-100 flex flex-col font-sans" x-data="quizApp()" x-init="initApp()">
 
-    <!-- Header Section -->
-    <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-700 p-2.5 rounded-xl shadow-inner">
-                    <i class="fa-solid fa-graduation-cap text-2xl text-amber-400"></i>
-                </div>
+    <!-- Top Navigation Header -->
+    <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white font-bold text-xl shadow-inner">WE1</div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">Working English 1 期中克漏字特訓</h1>
-                    <p class="text-xs text-indigo-200">依據小考考卷出題模式、課本 p.10–31 & 簡報紫色考點精編</p>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        Working English 1 期中考克漏字特訓系統
+                        <span class="bg-purple-500/30 text-purple-200 border border-purple-400/40 text-xs px-2 py-0.5 rounded-full font-normal">簡報紫色考點全收錄</span>
+                    </h1>
+                    <p class="text-xs text-indigo-200">依據小考題型打造 ‧ 滿分應試準備</p>
                 </div>
             </div>
-            <!-- Overall Score Stats Badge -->
-            <div id="global-stats" class="bg-indigo-800/80 border border-indigo-700/60 rounded-lg px-4 py-2 text-sm flex items-center gap-4">
-                <div>
-                    <span class="text-indigo-300 text-xs block">已作答題目</span>
-                    <span id="stat-answered" class="font-bold text-white">0 / 44</span>
+
+            <!-- Mode Selector & Controls -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Mode Toggle Button -->
+                <div class="bg-indigo-950 p-1 rounded-xl flex items-center border border-indigo-700/50">
+                    <button @click="setMode('practice')" 
+                            :class="mode === 'practice' ? 'bg-indigo-600 text-white shadow' : 'text-indigo-300 hover:text-white'"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        刷題解析模式
+                    </button>
+                    <button @click="setMode('exam')" 
+                            :class="mode === 'exam' ? 'bg-amber-600 text-white shadow' : 'text-indigo-300 hover:text-white'"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        模擬考模式
+                    </button>
                 </div>
-                <div class="h-8 w-px bg-indigo-700"></div>
-                <div>
-                    <span class="text-indigo-300 text-xs block">整體正確率</span>
-                    <span id="stat-accuracy" class="font-bold text-amber-300">0%</span>
+
+                <!-- Score / Progress Badge -->
+                <div class="bg-indigo-800/80 px-3 py-1.5 rounded-xl border border-indigo-700 text-xs flex items-center gap-2">
+                    <span class="text-indigo-200">完成度:</span>
+                    <span class="font-bold text-amber-300" x-text="`${answeredCount}/${filteredQuestions.length}`"></span>
                 </div>
+
+                <!-- Nav Drawer Trigger -->
+                <button @click="showNavModal = true" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    題目導航
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Navigation Tabs -->
-    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[72px] z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto gap-2 py-2">
-            <button onclick="switchTab('unit1')" id="tab-unit1" class="tab-btn active px-4 py-2.5 text-sm font-semibold rounded-lg flex items-center gap-2 whitespace-nowrap transition-all bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <i class="fa-solid fa-briefcase"></i> Unit 1: Online Job Search
-            </button>
-            <button onclick="switchTab('unit2')" id="tab-unit2" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg flex items-center gap-2 whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100">
-                <i class="fa-solid fa-comments"></i> Unit 2: Introductions & Interviews
-                <span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium">簡報紫色重點</span>
-            </button>
-            <button onclick="switchTab('unit3')" id="tab-unit3" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg flex items-center gap-2 whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100">
-                <i class="fa-solid fa-mug-hot"></i> Unit 3: Breaking the Ice
-                <span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium">簡報紫色重點</span>
-            </button>
-            <button onclick="switchTab('all')" id="tab-all" class="tab-btn px-4 py-2.5 text-sm font-semibold rounded-lg flex items-center gap-2 whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100">
-                <i class="fa-solid fa-trophy text-amber-500"></i> 全真綜合考場 (All Units)
-            </button>
-        </div>
-    </nav>
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex flex-col gap-6">
 
-    <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
-        <!-- Banner Info -->
-        <div class="mb-6 bg-gradient-to-r from-purple-900 to-indigo-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
-            <div class="relative z-10">
-                <div class="inline-flex items-center gap-2 bg-purple-500/30 border border-purple-400/40 px-3 py-1 rounded-full text-xs font-medium text-purple-200 mb-3">
-                    <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> 100% 擬真老師出題習慣
-                </div>
-                <h2 id="unit-banner-title" class="text-2xl font-bold mb-2">Unit 1: Online Job Search (線上求職)</h2>
-                <p id="unit-banner-desc" class="text-indigo-200 text-sm max-w-3xl">
-                    涵蓋課本 Listening, Conversation 與 Reading (MarvelTech 招聘廣告)。著重於<b>介系詞搭配 (in a high-pressure environment, as a sales professional)</b>、<b>片語 (keep an eye out for)</b> 與<b>動詞型態 (trouble finding)</b>。
-                </p>
+        <!-- Filters Bar -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+            <!-- Unit Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+                <button @click="selectedUnit = 'all'" 
+                        :class="selectedUnit === 'all' ? 'bg-indigo-600 text-white font-bold shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm whitespace-nowrap transition">
+                    全部單元 (Full Exam)
+                </button>
+                <button @click="selectedUnit = 'unit1'" 
+                        :class="selectedUnit === 'unit1' ? 'bg-indigo-600 text-white font-bold shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm whitespace-nowrap transition">
+                    Unit 1: Job Search
+                </button>
+                <button @click="selectedUnit = 'unit2'" 
+                        :class="selectedUnit === 'unit2' ? 'bg-indigo-600 text-white font-bold shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm whitespace-nowrap transition">
+                    Unit 2: Interviews
+                </button>
+                <button @click="selectedUnit = 'unit3'" 
+                        :class="selectedUnit === 'unit3' ? 'bg-indigo-600 text-white font-bold shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm whitespace-nowrap transition">
+                    Unit 3: Breaking Ice
+                </button>
             </div>
-            <i class="fa-solid fa-file-signature text-8xl text-white/5 absolute -right-4 -bottom-4 pointer-events-none"></i>
+
+            <!-- Section Type Filter -->
+            <div class="flex items-center gap-1.5 overflow-x-auto bg-slate-100 p-1 rounded-xl">
+                <button @click="selectedSection = 'all'" 
+                        :class="selectedSection === 'all' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">全部大題</button>
+                <button @click="selectedSection = 'Listening'" 
+                        :class="selectedSection === 'Listening' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Listening 聽力</button>
+                <button @click="selectedSection = 'Conversation'" 
+                        :class="selectedSection === 'Conversation' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Conversation 對話</button>
+                <button @click="selectedSection = 'Reading'" 
+                        :class="selectedSection === 'Reading' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Reading 閱讀</button>
+                <button @click="selectedSection = 'Grammar'" 
+                        :class="selectedSection === 'Grammar' ? 'bg-white text-indigo-700 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                        class="px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition">Grammar 文法特訓</button>
+            </div>
         </div>
 
-        <!-- Quiz Container -->
-        <div id="quiz-container" class="space-y-8">
-            <!-- Dynamic Passages render here -->
+        <!-- Exam Result Banner (Visible in Exam Mode after Submit) -->
+        <div x-show="mode === 'exam' && examSubmitted" x-cloak class="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-indigo-500/30">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                    <span class="bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">成績結算</span>
+                    <h2 class="text-3xl font-extrabold mt-2" x-text="`得分：${examScore} / 100 分`"></h2>
+                    <p class="text-slate-300 text-sm mt-1" x-text="`答對 ${correctCount} 題，答錯 ${incorrectCount} 題 (總計 ${filteredQuestions.length} 題)`"></p>
+                </div>
+                <div class="flex gap-3">
+                    <button @click="filterIncorrectOnly()" class="bg-rose-600 hover:bg-rose-500 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition shadow-md flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        僅檢討錯題 (<span x-text="incorrectCount"></span>)
+                    </button>
+                    <button @click="resetExam()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition shadow-md">
+                        重新測驗
+                    </button>
+                </div>
+            </div>
         </div>
-    </main>
 
-    <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 py-6 text-center text-xs mt-12">
-        <div class="max-w-7xl mx-auto px-4">
-            <p class="mb-1">Working English 1 Midterm Exam Preparation System</p>
-            <p class="text-slate-500">針對課本 Listening, Conversation, Reading 與簡報紫色文法標註重點規劃</p>
-        </div>
-    </footer>
-
-    <!-- JavaScript Data and Logic -->
-    <script>
-        // Database of Questions & Passages
-        const quizData = {
-            unit1: {
-                title: "Unit 1: Online Job Search",
-                description: "涵蓋課本 p.10, 11, 16 聽力與對話及 MarvelTech 招聘廣告。重點考查：介系詞 (in/as/for)、片語 (keep an eye out for, check out) 與動名词表達。",
-                passages: [
-                    {
-                        id: "u1_p1",
-                        source: "Listening Practice 1 (p.10)",
-                        title: "1. 尋找暑期工作 (Finding a Summer Job)",
-                        text: `<b>Peter:</b> I'm having trouble <span class="blank-highlight" id="blank-u1_p1_1">(1) ____</span> a summer job.<br>
-<b>Shirley:</b> What have you been doing so far?<br>
-<b>Peter:</b> I've been going through the "Help Wanted" section of the newspaper every morning.<br>
-<b>Shirley:</b> That method is a little <span class="blank-highlight" id="blank-u1_p1_2">(2) ____</span>. You should try an online job search.`,
-                        questions: [
-                            {
-                                id: "u1_p1_1",
-                                blankNum: 1,
-                                options: ["(A) to find", "(B) finding", "(C) for finding"],
-                                answer: 1, // B
-                                explanation: "【小考考題重點】<b>have trouble + (in) V-ing</b> 慣用法，表示「做某事有困難」。介系詞 in 常省略，後接動名詞 finding。"
-                            },
-                            {
-                                id: "u1_p1_2",
-                                blankNum: 2,
-                                options: ["(A) outdate", "(B) outdating", "(C) outdated"],
-                                answer: 2, // C
-                                explanation: "【字彙考點】<b>outdated</b> 為形容詞，表示「過時的、陳舊的」。形容報紙找工作的方法已經過時。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u1_p2",
-                        source: "Listening Practice 2 (p.11)",
-                        title: "2. 街頭求職標示與替換人選 (Job Signs in Town)",
-                        text: `<b>Shirley:</b> You can also keep an eye out when you're walking <span class="blank-highlight" id="blank-u1_p2_1">(1) ____</span> town. Some businesses will put a sign in the window if they are looking <span class="blank-highlight" id="blank-u1_p2_2">(2) ____</span> new employees.<br>
-<b>Peter:</b> <span class="blank-highlight" id="blank-u1_p2_3">(3) ____</span> you mention it, I think the bakery downtown might be looking to <span class="blank-highlight" id="blank-u1_p2_4">(4) ____</span> their old cashier who recently resigned.`,
-                        questions: [
-                            {
-                                id: "u1_p2_1",
-                                blankNum: 1,
-                                options: ["(A) for", "(B) around", "(C) surround"],
-                                answer: 1, // B
-                                explanation: "【介系詞考題】<b>walk around town</b> 表示「在鎮上逛逛/走走」。"
-                            },
-                            {
-                                id: "u1_p2_2",
-                                blankNum: 2,
-                                options: ["(A) for", "(B) at", "(C) into"],
-                                answer: 0, // A
-                                explanation: "【片語考題】<b>look for</b> 表示「尋找」。looking for new employees（正在尋找新員工）。"
-                            },
-                            {
-                                id: "u1_p2_3",
-                                blankNum: 3,
-                                options: ["(A) Now that", "(B) Now what", "(C) Because of"],
-                                answer: 0, // A
-                                explanation: "【小考考題重點】<b>Now that...</b> 為片語連接詞，意為「既然…；既然你提到了」。後接完整子句。"
-                            },
-                            {
-                                id: "u1_p2_4",
-                                blankNum: 4,
-                                options: ["(A) resign", "(B) replace", "(C) submit"],
-                                answer: 1, // B
-                                explanation: "【字彙與句意】<b>replace</b>（取代、頂替）。麵包店想要「替換/補缺」最近離職的老收銀員。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u1_p3",
-                        source: "Conversation Activity (p.11 / 簡報 p.2-3)",
-                        title: "3. 電話應徵與提交履歷 (Job Interview Call)",
-                        text: `<b>Peter:</b> Hi, Sam. I'm calling <span class="blank-highlight" id="blank-u1_p3_1">(1) ____</span> a job opening that I saw on your company's website.<br>
-<b>Sam:</b> Are you referring <span class="blank-highlight" id="blank-u1_p3_2">(2) ____</span> the ad for stockbroker trainees?<br>
-...<br>
-<b>Sam:</b> The best thing to do is to submit a copy of your resume <span class="blank-highlight" id="blank-u1_p3_3">(3) ____</span> our website. If we think you are <span class="blank-highlight" id="blank-u1_p3_4">(4) ____</span>, we will call you to set up an interview. Be sure to list two personal <span class="blank-highlight" id="blank-u1_p3_5">(5) ____</span> so we can get a better idea of your character.`,
-                        questions: [
-                            {
-                                id: "u1_p3_1",
-                                blankNum: 1,
-                                options: ["(A) for", "(B) about", "(C) to"],
-                                answer: 1, // B
-                                explanation: "【介系詞考題】<b>call about...</b> 表示「打電話詢問關於…」。"
-                            },
-                            {
-                                id: "u1_p3_2",
-                                blankNum: 2,
-                                options: ["(A) to", "(B) for", "(C) in"],
-                                answer: 0, // A
-                                explanation: "【動詞片語考題】<b>refer to...</b> 表示「指的是…；提及…」。"
-                            },
-                            {
-                                id: "u1_p3_3",
-                                blankNum: 3,
-                                options: ["(A) in", "(B) on", "(C) at"],
-                                answer: 1, // B
-                                explanation: "【介系詞考題】在網站上提交履歷要用介系詞 <b>on</b> our website。"
-                            },
-                            {
-                                id: "u1_p3_4",
-                                blankNum: 4,
-                                options: ["(A) qualify", "(B) qualification", "(C) qualified"],
-                                answer: 2, // C
-                                explanation: "【詞性考題】<b>qualified</b>（形容詞，具備資格的/合適的）。be動詞 are 後接形容詞作補語。"
-                            },
-                            {
-                                id: "u1_p3_5",
-                                blankNum: 5,
-                                options: ["(A) references", "(B) resumes", "(C) qualifications"],
-                                answer: 0, // A
-                                explanation: "【單字考題】<b>references</b>（推薦人/推薦信）。提供兩位個人推薦人以利瞭解性格。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u1_p4",
-                        source: "Reading - Job Posting (p.16 / 簡報 p.6-9)",
-                        title: "4. MarvelTech 招聘廣告與應徵條件 (MarvelTech Hiring)",
-                        text: `<b>Qualifications:</b><br>
-• Ability to work <span class="blank-highlight" id="blank-u1_p4_1">(1) ____</span> a high-pressure environment<br>
-• 8+ years' experience <span class="blank-highlight" id="blank-u1_p4_2">(2) ____</span> a sales professional with some management experience<br>
-• Bachelor's Degree in Business Administration, Marketing, or Economics <span class="blank-highlight" id="blank-u1_p4_3">(3) ____</span>.<br>
-<b>Job Responsibilities:</b><br>
-• Operate <span class="blank-highlight" id="blank-u1_p4_4">(4) ____</span> the limits of a tight budget.<br>
-<b>How to Apply:</b><br>
-• To apply <span class="blank-highlight" id="blank-u1_p4_5">(5) ____</span> this position, please send your CV to hirings@marvel-tech.com.`,
-                        questions: [
-                            {
-                                id: "u1_p4_1",
-                                blankNum: 1,
-                                options: ["(A) for", "(B) in", "(C) on"],
-                                answer: 1, // B
-                                explanation: "【小考考題重點】在某種環境下工作固定搭配介系詞 <b>in</b> a high-pressure environment。"
-                            },
-                            {
-                                id: "u1_p4_2",
-                                blankNum: 2,
-                                options: ["(A) with", "(B) for", "(C) as"],
-                                answer: 2, // C
-                                explanation: "【小考考題重點】作為/以…身份的經驗，搭配介系詞 <b>as</b> a sales professional。"
-                            },
-                            {
-                                id: "u1_p4_3",
-                                blankNum: 3,
-                                options: ["(A) preferring", "(B) preference", "(C) preferred"],
-                                answer: 2, // C
-                                explanation: "【小考考題重點】<b>preferred</b>（形容詞，被優先考慮的/具備者佳）。學士學位為優先條件。"
-                            },
-                            {
-                                id: "u1_p4_4",
-                                blankNum: 4,
-                                options: ["(A) within", "(B) without", "(C) into"],
-                                answer: 0, // A
-                                explanation: "【介系詞片語】<b>operate within the limits of...</b> 表示「在…的限制範圍之內運作/控管」。"
-                            },
-                            {
-                                id: "u1_p4_5",
-                                blankNum: 5,
-                                options: ["(A) to", "(B) for", "(C) in"],
-                                answer: 1, // B
-                                explanation: "【動詞片語考題】<b>apply for a position</b> 表示「應徵/申請該職缺」。"
-                            }
-                        ]
-                    }
-                ]
-            },
-            unit2: {
-                title: "Unit 2: Introductions and Interviews",
-                description: "涵蓋課本 p.20, 21, 26 與簡報紫色重點標註！焦點：that-clause 省略、wh-名詞子句、be + p.p. 被動語態、will vs. be going to 未來式辨析。",
-                passages: [
-                    {
-                        id: "u2_p1",
-                        source: "Listening Practice (p.20 / 簡報 p.11, 12, 15)",
-                        title: "1. Bob 的個人背景與職涯目標 (Bob's Job Interview)",
-                        text: `<b>Melissa:</b> Could you tell me a little more about yourself?<br>
-<b>Bob:</b> My name is Bob Davis. I was born in Sacramento, but my family <span class="blank-highlight" id="blank-u2_p1_1">(1) ____</span> to Miami when I was 12.<br>
-<b>Melissa:</b> On your resume, it says that you went to Yale University.<br>
-<b>Bob:</b> That's correct. I majored <span class="blank-highlight" id="blank-u2_p1_2">(2) ____</span> economics. I'm very passionate <span class="blank-highlight" id="blank-u2_p1_3">(3) ____</span> my career. It's the top priority in my life.<br>
-<b>Melissa:</b> Where do you see yourself in 10 years?<br>
-<b>Bob:</b> I really hope <span class="blank-highlight" id="blank-u2_p1_4">(4) ____</span> I can open my own business someday in the future.`,
-                        questions: [
-                            {
-                                id: "u2_p1_1",
-                                blankNum: 1,
-                                options: ["(A) relocate", "(B) relocated", "(C) relocating"],
-                                answer: 1, // B
-                                explanation: "【時態考點】發生在過去（when I was 12），須用過去式動詞 <b>relocated</b>（搬遷）。"
-                            },
-                            {
-                                id: "u2_p1_2",
-                                blankNum: 2,
-                                options: ["(A) in", "(B) on", "(C) at"],
-                                answer: 0, // A
-                                explanation: "【簡報重點介系詞】<b>major in...</b> 表示「主修某學科」。I majored in economics."
-                            },
-                            {
-                                id: "u2_p1_3",
-                                blankNum: 3,
-                                options: ["(A) for", "(B) with", "(C) about"],
-                                answer: 2, // C
-                                explanation: "【形容詞介系詞搭配】<b>be passionate about...</b> 表示「對…充滿熱情」。"
-                            },
-                            {
-                                id: "u2_p1_4",
-                                blankNum: 4,
-                                options: ["(A) [that]", "(B) [which]", "(C) [what]"],
-                                answer: 0, // A
-                                explanation: "【簡報紫色考點：that-clause】動詞 hope 後面接名詞子句作受詞，引導詞 <b>that 可以省略</b>（簡報以標記 `that-clause (that omitted)` 強調）。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u2_p2",
-                        source: "Conversation Activity (p.21 / 簡報 p.2, 4, 6)",
-                        title: "2. 應徵工作細節與被動語態 (Interview Call & Passive)",
-                        text: `<b>Craig:</b> You seem a little nervous today. Is everything OK?<br>
-<b>Angeline:</b> I have an important job interview for an entry-level position. They sell automotive products.<br>
-<b>Craig:</b> How many hours per week would you <span class="blank-highlight" id="blank-u2_p2_1">(1) ____</span> to work?<br>
-<b>Angeline:</b> I'm not certain, but it's a <span class="blank-highlight" id="blank-u2_p2_2">(2) ____</span> position.<br>
-<b>Craig:</b> That sounds really exciting!<br>
-<b>Angeline:</b> Thanks! I'll call you later and let you know <span class="blank-highlight" id="blank-u2_p2_3">(3) ____</span> it went.<br>
-<b>Craig:</b> I'm sure <span class="blank-highlight" id="blank-u2_p2_4">(4) ____</span> you'll do fine! Best of luck!`,
-                        questions: [
-                            {
-                                id: "u2_p2_1",
-                                blankNum: 1,
-                                options: ["(A) require", "(B) be required", "(C) requiring"],
-                                answer: 1, // B
-                                explanation: "【簡報紫色考點：be + p.p. 被動語態】「你將會被要求工作幾小時？」，為被動語態，助動詞 would 後接原型 <b>be required</b>。"
-                            },
-                            {
-                                id: "u2_p2_2",
-                                blankNum: 2,
-                                options: ["(A) temporary", "(B) previous", "(C) permanent"],
-                                answer: 0, // A
-                                explanation: "【課本單字考點】<b>temporary</b> 表示「臨時的、短期的」職位。"
-                            },
-                            {
-                                id: "u2_p2_3",
-                                blankNum: 3,
-                                options: ["(A) how", "(B) what", "(C) where"],
-                                answer: 0, // A
-                                explanation: "【簡報紫色考點：wh-clause 名詞子句】let you know <b>how it went</b>（讓你知道面試進行得如何）。wh- 疑問詞引導名詞子句當受詞。"
-                            },
-                            {
-                                id: "u2_p2_4",
-                                blankNum: 4,
-                                options: ["(A) [that]", "(B) [who]", "(C) [where]"],
-                                answer: 0, // A
-                                explanation: "【簡報紫色考點：that-clause 省略】I'm sure <b>[that]</b> you'll do fine 中的連接詞 that 被省略。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u2_p3",
-                        source: "Reading - Follow-up Email (p.26 / 簡報 p.13, 14)",
-                        title: "3. 面試後感謝信與市場拓展 (Follow-up Email)",
-                        text: `Dear Shawna,<br>
-It was so nice to meet with you yesterday to discuss the Business Development Specialist position. I think there are some exciting things <span class="blank-highlight" id="blank-u2_p3_1">(1) ____</span> the horizon for the company. I truly believe that with the right team it is possible to take the company to new <span class="blank-highlight" id="blank-u2_p3_2">(2) ____</span>.<br>
-I believe that the Indian market would be a better entry <span class="blank-highlight" id="blank-u2_p3_3">(3) ____</span> than China because there is less competition. I think with my <span class="blank-highlight" id="blank-u2_p3_4">(4) ____</span> experience in international business, I would be the right person for the job.`,
-                        questions: [
-                            {
-                                id: "u2_p3_1",
-                                blankNum: 1,
-                                options: ["(A) in", "(B) on", "(C) at"],
-                                answer: 1, // B
-                                explanation: "【簡報重點片語】<b>on the horizon</b> 為固定搭配，表示「即將到來的；前景在望的」。"
-                            },
-                            {
-                                id: "u2_p3_2",
-                                blankNum: 2,
-                                options: ["(A) heights", "(B) places", "(C) lengths"],
-                                answer: 0, // A
-                                explanation: "【簡報重點片語】<b>take the company to new heights</b>（帶領公司邁向新高度/再創高峰）。"
-                            },
-                            {
-                                id: "u2_p3_3",
-                                blankNum: 3,
-                                options: ["(A) place", "(B) point", "(C) target"],
-                                answer: 1, // B
-                                explanation: "【簡報與單字考點】<b>entry point</b>（切入點 / 入門市場）。印度市場是更好的切入點。"
-                            },
-                            {
-                                id: "u2_p3_4",
-                                blankNum: 4,
-                                options: ["(A) previous", "(B) future", "(C) upcoming"],
-                                answer: 0, // A
-                                explanation: "【單字考題】<b>previous</b>（形容詞，先前的/過往的）。憑藉我「過往的」國際商務經驗。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u2_p4",
-                        source: "Grammar Check - Future Forms (簡報 p.1, 3, 7, 8, 9)",
-                        title: "4. 未來式觀念文法辨析 (will vs. be going to)",
-                        text: `1. Look at those dark clouds in the sky! It <span class="blank-highlight" id="blank-u2_p4_1">(1) ____</span> rain soon. (現在看得到跡象)<br>
-2. "I'm really thirsty." — "Don't worry, I <span class="blank-highlight" id="blank-u2_p4_2">(2) ____</span> buy you a drink." (當場決定/主動幫忙)<br>
-3. I promise I <span class="blank-highlight" id="blank-u2_p4_3">(3) ____</span> tell anyone your secret. (承諾/諾言)<br>
-4. We have already made a decision. We <span class="blank-highlight" id="blank-u2_p4_4">(4) ____</span> meet at six o'clock tonight. (事先已計畫打算)`,
-                        questions: [
-                            {
-                                id: "u2_p4_1",
-                                blankNum: 1,
-                                options: ["(A) is going to", "(B) will", "(C) is"],
-                                answer: 0, // A
-                                explanation: "【簡報文法考點】<b>be going to</b> 用於「現在看得見的跡象/證據」（Look at dark clouds!）。"
-                            },
-                            {
-                                id: "u2_p4_2",
-                                blankNum: 2,
-                                options: ["(A) am going to", "(B) will", "(C) would"],
-                                answer: 1, // B
-                                explanation: "【簡報文法考點】<b>will</b> 用於「說話當下做出的決定」或「主動提供協助」（on-the-spot decision / offer help）。"
-                            },
-                            {
-                                id: "u2_p4_3",
-                                blankNum: 3,
-                                options: ["(A) am not going to", "(B) won't", "(C) don't"],
-                                answer: 1, // B
-                                explanation: "【簡報文法考點】做出「承諾 (promise)」時使用 <b>will / won't</b>（I won't tell anyone）。"
-                            },
-                            {
-                                id: "u2_p4_4",
-                                blankNum: 4,
-                                options: ["(A) will", "(B) are going to", "(C) would"],
-                                answer: 1, // B
-                                explanation: "【簡報文法考點】說話之前就已經決定好的「事先計畫/打算 (plan/intention)」，要用 <b>be going to</b>。"
-                            }
-                        ]
-                    }
-                ]
-            },
-            unit3: {
-                title: "Unit 3: Breaking the Ice",
-                description: "涵蓋課本 p.30, 31, 32, 36 與簡報重點。焦點：wh-名詞子句、that-子句、who 關係子句、頻率副詞位置與破冰用語。",
-                passages: [
-                    {
-                        id: "u3_p1",
-                        source: "Listening Practice (p.30 / 簡報 p.1, 2, 5)",
-                        title: "1. 破冰對話、創作與名詞/關係子句 (Geoff & Candy)",
-                        text: `<b>Geoff:</b> I always feel nervous whenever I <span class="blank-highlight" id="blank-u3_p1_1">(1) ____</span> with the boss.<br>
-<b>Candy:</b> He just gave some instructions about <span class="blank-highlight" id="blank-u3_p1_2">(2) ____</span> I should design my presentation.<br>
-<b>Geoff:</b> I never knew <span class="blank-highlight" id="blank-u3_p1_3">(3) ____</span> you were a writer. Are you planning to write a novel?<br>
-<b>Candy:</b> I'm working on a horror movie about a group of friends <span class="blank-highlight" id="blank-u3_p1_4">(4) ____</span> communicate with evil spirits. I'll let you read the first <span class="blank-highlight" id="blank-u3_p1_5">(5) ____</span> when it's done.<br>
-<b>Geoff:</b> I heard Hawaii is beautiful. I really <span class="blank-highlight" id="blank-u3_p1_6">(6) ____</span> you!`,
-                        questions: [
-                            {
-                                id: "u3_p1_1",
-                                blankNum: 1,
-                                options: ["(A) interact", "(B) socialize", "(C) communicate"],
-                                answer: 0, // A
-                                explanation: "【單字考點】<b>interact with...</b>（與…互動/交流）。每次與老闆互動都感到緊張。"
-                            },
-                            {
-                                id: "u3_p1_2",
-                                blankNum: 2,
-                                options: ["(A) how", "(B) what", "(C) which"],
-                                answer: 0, // A
-                                explanation: "【簡報紫色考點：wh-clause】介系詞 about 後接名詞子句 <b>how I should design my presentation</b>（我該如何設計簡報）。"
-                            },
-                            {
-                                id: "u3_p1_3",
-                                blankNum: 3,
-                                options: ["(A) that", "(B) which", "(C) what"],
-                                answer: 0, // A
-                                explanation: "【簡報紫色考點：that-clause】knew 後接 <b>that</b> 引導的名詞子句作受詞。"
-                            },
-                            {
-                                id: "u3_p1_4",
-                                blankNum: 4,
-                                options: ["(A) who", "(B) which", "(C) whom"],
-                                answer: 0, // A
-                                explanation: "【簡報紫色考點：relative clause 關係子句】先行詞為「a group of friends（人）」，關係代名詞主格用 <b>who</b>。"
-                            },
-                            {
-                                id: "u3_p1_5",
-                                blankNum: 5,
-                                options: ["(A) draft", "(B) novel", "(C) script"],
-                                answer: 0, // A
-                                explanation: "【課本單字】read the first <b>draft</b>（閱讀第一份初稿/草稿）。"
-                            },
-                            {
-                                id: "u3_p1_6",
-                                blankNum: 6,
-                                options: ["(A) envy", "(B) hate", "(C) prefer"],
-                                explanation: "【課本單字】I really <b>envy</b> you.（我真的很羨慕你！）。",
-                                answer: 0 // A
-                            }
-                        ]
-                    },
-                    {
-                        id: "u3_p2",
-                        source: "Conversation Activity (p.31 / 簡報 p.3, 4)",
-                        title: "2. 日常閒聊與共通興趣 (Small Talk & Common Hobbies)",
-                        text: `<b>Sam:</b> Are you waiting for the five-thirty bus?<br>
-<b>Geoff:</b> As a <span class="blank-highlight" id="blank-u3_p2_1">(1) ____</span> of fact, I am.<br>
-<b>Sam:</b> I checked online and it says that it's <span class="blank-highlight" id="blank-u3_p2_2">(2) ____</span> late.<br>
-<b>Geoff:</b> Oh, well. These things happen every now and <span class="blank-highlight" id="blank-u3_p2_3">(3) ____</span>.<br>
-<b>Geoff:</b> I attended a soccer game last Sunday.<br>
-<b>Sam:</b> <span class="blank-highlight" id="blank-u3_p2_4">(4) ____</span> kidding! I went to that event as well! In my opinion, it was <span class="blank-highlight" id="blank-u3_p2_5">(5) ____</span> every penny.<br>
-<b>Geoff:</b> We seem to have a lot <span class="blank-highlight" id="blank-u3_p2_6">(6) ____</span> common. We should hang out sometime.`,
-                        questions: [
-                            {
-                                id: "u3_p2_1",
-                                blankNum: 1,
-                                options: ["(A) matter", "(B) problem", "(C) point"],
-                                answer: 0, // A
-                                explanation: "【簡報重點片語】<b>As a matter of fact</b>（事實上、其實）。"
-                            },
-                            {
-                                id: "u3_p2_2",
-                                blankNum: 2,
-                                options: ["(A) run", "(B) running", "(C) ran"],
-                                answer: 1, // B
-                                explanation: "【簡報重點片語】<b>running late</b> 表示「公車延誤/遲到」。"
-                            },
-                            {
-                                id: "u3_p2_3",
-                                blankNum: 3,
-                                options: ["(A) then", "(B) again", "(C) after"],
-                                answer: 1, // B
-                                explanation: "【簡報重點片語】<b>every now and again</b>（偶爾/時不時）。"
-                            },
-                            {
-                                id: "u3_p2_4",
-                                blankNum: 4,
-                                options: ["(A) No", "(B) Not", "(C) Never"],
-                                answer: 0, // A
-                                explanation: "【簡報口語片語】<b>No kidding!</b>（真的假的！/ 不是吧！）。"
-                            },
-                            {
-                                id: "u3_p2_5",
-                                blankNum: 5,
-                                options: ["(A) cost", "(B) value", "(C) worth"],
-                                answer: 2, // C
-                                explanation: "【簡報重點片語】<b>worth every penny</b>（非常值得/物超所值）。"
-                            },
-                            {
-                                id: "u3_p2_6",
-                                blankNum: 6,
-                                options: ["(A) in", "(B) with", "(C) for"],
-                                answer: 0, // A
-                                explanation: "【小考&簡報重點片語】<b>have a lot in common</b>（有許多共同點）。"
-                            }
-                        ]
-                    },
-                    {
-                        id: "u3_p3",
-                        source: "Reading & Grammar Check (p.32 / p.36)",
-                        title: "3. 破冰活動設計與頻率副詞 (Icebreakers & Adverbs)",
-                        text: `The key to designing an effective icebreaker is to keep things simple and <span class="blank-highlight" id="blank-u3_p3_1">(1) ____</span>. Make sure you set a clear <span class="blank-highlight" id="blank-u3_p3_2">(2) ____</span> for the icebreaker as well.<br><br>
-<b>Grammar: Adverbs of Frequency</b><br>
-3. She <span class="blank-highlight" id="blank-u3_p3_3">(3) ____</span> carries her passport when traveling abroad. (頻率 100%)<br>
-4. Benson is late for work only 5% of the time, so he <span class="blank-highlight" id="blank-u3_p3_4">(4) ____</span> gets to work late.`,
-                        questions: [
-                            {
-                                id: "u3_p3_1",
-                                blankNum: 1,
-                                options: ["(A) casual", "(B) official", "(C) difficult"],
-                                answer: 0, // A
-                                explanation: "【課本閱讀重點】keep things simple and <b>casual</b>（保持簡單與輕鬆隨意）。"
-                            },
-                            {
-                                id: "u3_p3_2",
-                                blankNum: 2,
-                                options: ["(A) objective", "(B) subject", "(C) objection"],
-                                answer: 0, // A
-                                explanation: "【課本閱讀重點】set a clear <b>objective</b>（設定明確的目標/目的）。"
-                            },
-                            {
-                                id: "u3_p3_3",
-                                blankNum: 3,
-                                options: ["(A) always", "(B) seldom", "(C) never"],
-                                answer: 0, // A
-                                explanation: "【課本 Grammer 頻率副詞】100% 發生頻率對應頻率副詞 <b>always</b>（總是）。"
-                            },
-                            {
-                                id: "u3_p3_4",
-                                blankNum: 4,
-                                options: ["(A) usually", "(B) rarely", "(C) frequently"],
-                                answer: 1, // B
-                                explanation: "【課本 Grammer 頻率副詞】5% 極低頻率對應頻率副詞 <b>rarely / seldom</b>（極少/罕見）。"
-                            }
-                        ]
-                    }
-                ]
-            }
-        };
-
-        // User Selection & Scoring State
-        let userAnswers = {};
-        let currentTab = 'unit1';
-
-        // Initialize App
-        window.onload = function() {
-            renderQuiz('unit1');
-            updateGlobalStats();
-        };
-
-        // Switch Tabs
-        function switchTab(tabKey) {
-            currentTab = tabKey;
-            
-            // Update UI tab button styles
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active', 'bg-indigo-50', 'text-indigo-700', 'border', 'border-indigo-200');
-                btn.classList.add('text-slate-600');
-            });
-
-            const activeBtn = document.getElementById(`tab-${tabKey}`);
-            if (activeBtn) {
-                activeBtn.classList.add('active', 'bg-indigo-50', 'text-indigo-700', 'border', 'border-indigo-200');
-                activeBtn.classList.remove('text-slate-600');
-            }
-
-            // Update Banner Text
-            const bannerTitle = document.getElementById('unit-banner-title');
-            const bannerDesc = document.getElementById('unit-banner-desc');
-
-            if (tabKey === 'unit1') {
-                bannerTitle.innerText = "Unit 1: Online Job Search (線上求職)";
-                bannerDesc.innerHTML = quizData.unit1.description;
-            } else if (tabKey === 'unit2') {
-                bannerTitle.innerText = "Unit 2: Introductions and Interviews (自我介紹與面試)";
-                bannerDesc.innerHTML = quizData.unit2.description;
-            } else if (tabKey === 'unit3') {
-                bannerTitle.innerText = "Unit 3: Breaking the Ice (破冰與社交)";
-                bannerDesc.innerHTML = quizData.unit3.description;
-            } else if (tabKey === 'all') {
-                bannerTitle.innerText = "期中考全真綜合模考 (All Units Mixed)";
-                bannerDesc.innerHTML = "匯總 Unit 1、Unit 2 與 Unit 3 全部 44 道高頻克漏字題目，模擬期中考實戰出題！";
-            }
-
-            renderQuiz(tabKey);
-        }
-
-        // Render Passages and Questions
-        function renderQuiz(tabKey) {
-            const container = document.getElementById('quiz-container');
-            container.innerHTML = '';
-
-            let passagesToRender = [];
-            if (tabKey === 'all') {
-                passagesToRender = [
-                    ...quizData.unit1.passages,
-                    ...quizData.unit2.passages,
-                    ...quizData.unit3.passages
-                ];
-            } else {
-                passagesToRender = quizData[tabKey].passages;
-            }
-
-            passagesToRender.forEach((passage, passageIdx) => {
-                const passageCard = document.createElement('div');
-                passageCard.className = "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm transition-all hover:shadow-md";
-
-                // Header
-                let html = `
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-                            ${passage.source}
-                        </span>
-                        <span class="text-xs font-semibold text-slate-400">
-                            共 ${passage.questions.length} 題
-                        </span>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-4">${passage.title}</h3>
-
-                    <!-- Article Text Box -->
-                    <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-5 mb-6 text-slate-800 leading-relaxed text-base">
-                        ${passage.text}
-                    </div>
-
-                    <!-- Questions Grid -->
-                    <div class="space-y-6">
-                `;
-
-                // Questions
-                passage.questions.forEach((q) => {
-                    const selectedOpt = userAnswers[q.id];
-                    const isAnswered = selectedOpt !== undefined;
-
-                    html += `
-                        <div id="q-card-${q.id}" class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 transition-all">
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="w-7 h-7 flex items-center justify-center bg-indigo-900 text-white font-bold rounded-lg text-xs">
-                                    (${q.blankNum})
-                                </span>
-                                <span class="text-sm font-semibold text-slate-700">請選擇最佳填空選項：</span>
-                            </div>
-
-                            <!-- Options -->
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                    `;
-
-                    q.options.forEach((optText, optIdx) => {
-                        const isSelected = selectedOpt === optIdx;
-                        let btnStyle = "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700";
-                        if (isSelected) {
-                            btnStyle = "bg-indigo-600 border-indigo-600 text-white font-semibold shadow-sm";
-                        }
-
-                        html += `
-                            <button onclick="selectOption('${q.id}', ${optIdx})" 
-                                    class="option-btn border rounded-xl p-3 text-left text-sm transition-all flex items-center justify-between ${btnStyle}">
-                                <span>${optText}</span>
-                                ${isSelected ? '<i class="fa-solid fa-circle-check text-white"></i>' : ''}
-                            </button>
-                        `;
-                    });
-
-                    html += `</div>`;
-
-                    // Explanation Box (Rendered if answered or checked)
-                    html += `
-                        <div id="exp-${q.id}" class="hidden mt-3 p-4 rounded-xl text-xs leading-relaxed"></div>
-                    `;
-
-                    html += `</div>`; // end q-card
-                });
-
-                html += `
-                    </div>
+        <!-- Questions List Render Container -->
+        <div class="flex flex-col gap-8">
+            <template x-for="(passage, pIdx) in groupedPassages" :key="pIdx">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     
-                    <!-- Action Bar per Passage -->
-                    <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-                        <button onclick="checkPassageAnswers('${passage.id}')" class="px-5 py-2.5 bg-indigo-900 hover:bg-indigo-800 text-white rounded-xl text-sm font-semibold shadow-sm transition-all flex items-center gap-2">
-                            <i class="fa-solid fa-[#check]"></i> 對答案 / 觀看完整解析
-                        </button>
-                        <div id="score-msg-${passage.id}" class="text-sm font-bold"></div>
+                    <!-- Passage Header -->
+                    <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-100 text-indigo-800" x-text="passage.unit"></span>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700" x-text="passage.section"></span>
+                            <h3 class="font-bold text-slate-800 text-base" x-text="passage.title"></h3>
+                        </div>
+                        <span class="text-xs text-slate-500" x-text="`${passage.questions.length} 個考點挖空`"></span>
                     </div>
-                `;
 
-                passageCard.innerHTML = html;
-                container.appendChild(passageCard);
-            });
-        }
+                    <!-- Context Box (Exam Style Paragraph Context) -->
+                    <div class="p-6 bg-indigo-50/40 border-b border-slate-200 text-slate-800 leading-relaxed font-serif text-base sm:text-lg">
+                        <div class="italic text-slate-500 text-xs mb-2 font-sans">【閱讀對照段落 / Passage Context】</div>
+                        <div class="bg-white p-4 sm:p-5 rounded-xl border border-indigo-100 shadow-sm whitespace-pre-line font-sans text-slate-700 leading-loose" x-html="passage.passageHtml"></div>
+                    </div>
 
-        // Handle Selecting an Option
-        function selectOption(questionId, optionIndex) {
-            userAnswers[questionId] = optionIndex;
+                    <!-- Individual Questions Grid -->
+                    <div class="p-6 grid grid-cols-1 gap-6">
+                        <template x-for="(q, qIdx) in passage.questions" :key="q.id">
+                            <div :id="`q-card-${q.id}`" 
+                                 class="p-5 rounded-xl border transition-all duration-200"
+                                 :class="{
+                                     'border-slate-200 bg-white hover:border-indigo-300': !userAnswers[q.id],
+                                     'border-rose-300 bg-rose-50/30': userAnswers[q.id] && (mode==='practice' || examSubmitted) && userAnswers[q.id] !== q.answer,
+                                     'border-emerald-300 bg-emerald-50/30': userAnswers[q.id] && (mode==='practice' || examSubmitted) && userAnswers[q.id] === q.answer,
+                                     'border-indigo-400 bg-indigo-50/20': userAnswers[q.id] && mode==='exam' && !examSubmitted
+                                 }">
+                                
+                                <div class="flex items-start justify-between gap-4 mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center" x-text="q.number"></span>
+                                        <span class="font-bold text-slate-900 text-base" x-html="q.prompt"></span>
+                                    </div>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-purpleAccent-100 text-purpleAccent-700" x-text="q.grammarTag"></span>
+                                </div>
+
+                                <!-- Options -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 my-3">
+                                    <template x-for="opt in q.options" :key="opt.key">
+                                        <button @click="selectAnswer(q.id, opt.key)"
+                                                :disabled="mode === 'practice' && userAnswers[q.id]"
+                                                class="px-4 py-3 rounded-xl border text-left text-sm font-medium transition flex items-center justify-between"
+                                                :class="getOptionClass(q, opt.key)">
+                                            <span x-text="`${opt.key}. ${opt.text}`"></span>
+                                            
+                                            <!-- Check/Cross icon in Practice or submitted Exam mode -->
+                                            <template x-if="(mode === 'practice' || examSubmitted) && userAnswers[q.id]">
+                                                <span>
+                                                    <svg x-show="opt.key === q.answer" class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                    <svg x-show="userAnswers[q.id] === opt.key && opt.key !== q.answer" class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                </span>
+                                            </template>
+                                        </button>
+                                    </template>
+                                </div>
+
+                                <!-- Practice Mode Detailed Explanation Dropdown -->
+                                <div x-show="(mode === 'practice' && userAnswers[q.id]) || examSubmitted" 
+                                     x-transition 
+                                     class="mt-4 pt-4 border-t border-slate-200 text-xs leading-relaxed space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold px-2 py-0.5 rounded text-white text-[10px] uppercase"
+                                              :class="userAnswers[q.id] === q.answer ? 'bg-emerald-600' : 'bg-rose-600'"
+                                              x-text="userAnswers[q.id] === q.answer ? '正解 Correct' : '錯題 Error'"></span>
+                                        <span class="font-bold text-slate-800" x-text="`正確答案: (${q.answer})`"></span>
+                                        <span class="text-slate-500" x-text="`考驗重點：${q.focus}`"></span>
+                                    </div>
+                                    <div class="bg-purpleAccent-50 p-3 rounded-lg border border-purpleAccent-100 text-slate-700">
+                                        <div class="font-bold text-purpleAccent-700 mb-1">【詳盡文法/介係詞解析】</div>
+                                        <div x-html="q.explanation"></div>
+                                    </div>
+                                    <div class="text-slate-500 italic" x-text="`句意翻譯：${q.translation}`"></div>
+                                </div>
+
+                            </div>
+                        </template>
+                    </div>
+
+                </div>
+            </template>
+        </div>
+
+        <!-- Floating Submit Bar for Exam Mode -->
+        <div x-show="mode === 'exam' && !examSubmitted" class="fixed bottom-6 right-6 z-30">
+            <button @click="submitExam()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-3.5 rounded-2xl shadow-2xl transition border-2 border-amber-300 flex items-center gap-2 text-base">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                交卷結算成績 (<span x-text="`${answeredCount}/${filteredQuestions.length}`"></span>)
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Navigation Drawer Modal -->
+    <div x-show="showNavModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div @click.away="showNavModal = false" class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+                <h3 class="font-bold text-slate-900 text-lg">題目導航快速跳轉</h3>
+                <button @click="showNavModal = false" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
             
-            // Update Blank Tag styling in text
-            const blankElem = document.getElementById(`blank-${questionId}`);
-            if (blankElem) {
-                blankElem.classList.add('blank-answered');
-            }
+            <div class="py-6 grid grid-cols-6 sm:grid-cols-10 gap-2.5 max-h-96 overflow-y-auto">
+                <template x-for="q in filteredQuestions" :key="q.id">
+                    <button @click="scrollToQuestion(q.id)" 
+                            class="h-10 rounded-xl font-bold text-xs flex items-center justify-center border transition"
+                            :class="getNavButtonClass(q.id)">
+                        <span x-text="q.number"></span>
+                    </button>
+                </template>
+            </div>
 
-            // Re-render current view to update radio buttons state
-            renderQuiz(currentTab);
-            updateGlobalStats();
-        }
+            <div class="pt-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> 答對</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-500"></span> 答錯</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-indigo-600"></span> 已答</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-slate-200"></span> 未答</span>
+                </div>
+                <button @click="showNavModal = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold text-slate-700">關閉</button>
+            </div>
+        </div>
+    </div>
 
-        // Check Answers for a specific passage
-        function checkPassageAnswers(passageId) {
-            // Find passage
-            let targetPassage = null;
-            Object.values(quizData).forEach(u => {
-                if (u.passages) {
-                    const found = u.passages.find(p => p.id === passageId);
-                    if (found) targetPassage = found;
-                }
-            });
+    <!-- Application Script -->
+    <script>
+        function quizApp() {
+            return {
+                mode: 'practice', // 'practice' or 'exam'
+                selectedUnit: 'all',
+                selectedSection: 'all',
+                userAnswers: {},
+                examSubmitted: false,
+                examScore: 0,
+                correctCount: 0,
+                incorrectCount: 0,
+                showNavModal: false,
+                onlyIncorrect: false,
 
-            if (!targetPassage) return;
+                // Comprehensive Database covering ALL purple highlights from slides & textbook pages
+                passagesData: [
+                    // ==========================================
+                    // UNIT 1: ONLINE JOB SEARCH
+                    // ==========================================
+                    {
+                        id: 'u1-listening',
+                        unit: 'Unit 1',
+                        unitKey: 'unit1',
+                        section: 'Listening',
+                        title: 'Finding a Job (Listening p.10-11)',
+                        passageHtml: `Peter: I'm having trouble <span class="purple-highlight">(1) ___</span> a summer job.
+Shirley: What have you been doing so far?
+Peter: I've been going <span class="purple-highlight">(2) ___</span> the "Help Wanted" section of the newspaper every morning.
+Shirley: That method is a little <span class="purple-highlight">(3) ___</span>. You should try an online job search. You can check <span class="purple-highlight">(4) ___</span> some of the popular online job sites. You can also keep an eye <span class="purple-highlight">(5) ___</span> when you're walking <span class="purple-highlight">(6) ___</span> town. Some businesses will put a sign <span class="purple-highlight">(7) ___</span> the window if they are looking <span class="purple-highlight">(8) ___</span> new employees.
+Peter: <span class="purple-highlight">(9) ___</span> you mention it, I think the bakery downtown might be looking to replace their old cashier who recently <span class="purple-highlight">(10) ___</span>.
+Shirley: If you're interested <span class="purple-highlight">(11) ___</span> bread and desserts and you can accept the hours, it might be a good fit <span class="purple-highlight">(12) ___</span> you.`,
+                        questions: [
+                            {
+                                id: 1,
+                                number: 1,
+                                prompt: "Peter: I'm having trouble [ (1) ___ ] a summer job.",
+                                options: [
+                                    { key: 'A', text: 'to find' },
+                                    { key: 'B', text: 'finding' },
+                                    { key: 'C', text: 'for finding' }
+                                ],
+                                answer: 'B',
+                                focus: 'have trouble + V-ing',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>have trouble + V-ing (動名詞)</b> 為固定搭配句型，表示「做某事有困難」。不可用不定詞 to find。',
+                                translation: '我最近在找暑期工讀時遇到困難。'
+                            },
+                            {
+                                id: 2,
+                                number: 2,
+                                prompt: "I've been going [ (2) ___ ] the 'Help Wanted' section...",
+                                options: [
+                                    { key: 'A', text: 'through' },
+                                    { key: 'B', text: 'across' },
+                                    { key: 'C', text: 'over' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 go through',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>go through</b> 表示「仔細查閱、瀏覽（報紙/文件）」。',
+                                translation: '我每天早上都在翻閱報紙的「徵人啟事」版面。'
+                            },
+                            {
+                                id: 3,
+                                number: 3,
+                                prompt: "That method is a little [ (3) ___ ].",
+                                options: [
+                                    { key: 'A', text: 'outdate' },
+                                    { key: 'B', text: 'outdating' },
+                                    { key: 'C', text: 'outdated' }
+                                ],
+                                answer: 'C',
+                                focus: '分詞形容詞 outdated',
+                                grammarTag: '單字文法',
+                                explanation: '<b>outdated</b> 為形容詞，意為「過時的、陳舊的」。',
+                                translation: '那個方法有點過時了。'
+                            },
+                            {
+                                id: 4,
+                                number: 4,
+                                prompt: "You can check [ (4) ___ ] some of the popular online job sites.",
+                                options: [
+                                    { key: 'A', text: 'out' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'off' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 check out',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>check out</b> 意為「查看、探索（網站/好去處）」。',
+                                translation: '你可以去看看一些熱門的求職網站。'
+                            },
+                            {
+                                id: 5,
+                                number: 5,
+                                prompt: "You can also keep an eye [ (5) ___ ]...",
+                                options: [
+                                    { key: 'A', text: 'out' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'off' }
+                                ],
+                                answer: 'A',
+                                focus: '片語 keep an eye out',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>keep an eye out (for...)</b> 意為「保持留意、注意觀察」。',
+                                translation: '你走在鎮上的時候也可以多加留意。'
+                            },
+                            {
+                                id: 6,
+                                number: 6,
+                                prompt: "...when you're walking [ (6) ___ ] town.",
+                                options: [
+                                    { key: 'A', text: 'for' },
+                                    { key: 'B', text: 'surround' },
+                                    { key: 'C', text: 'around' }
+                                ],
+                                answer: 'C',
+                                focus: '介係詞 around',
+                                grammarTag: '小考考卷第(1)題',
+                                explanation: '<b>walk around town</b> 表示「在鎮上到處走走/逛逛」。',
+                                translation: '當你在鎮上到處走走時。'
+                            },
+                            {
+                                id: 7,
+                                number: 7,
+                                prompt: "Some businesses will put a sign [ (7) ___ ] the window...",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 put a sign in the window',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '張貼告示在窗戶內部或玻璃上，課本標準用法為 <b>in the window</b>。',
+                                translation: '有些店家如果在招募新員工，會在窗戶張貼告示。'
+                            },
+                            {
+                                id: 8,
+                                number: 8,
+                                prompt: "...if they are looking [ (8) ___ ] new employees.",
+                                options: [
+                                    { key: 'A', text: 'at' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'to' }
+                                ],
+                                answer: 'B',
+                                focus: '介係詞 look for',
+                                grammarTag: '小考考卷第(2)題',
+                                explanation: '<b>look for</b> 意為「尋找、招募（員工）」。',
+                                translation: '如果他們正在尋找新員工的話。'
+                            },
+                            {
+                                id: 9,
+                                number: 9,
+                                prompt: "[ (9) ___ ] you mention it, I think the bakery downtown...",
+                                options: [
+                                    { key: 'A', text: 'Now that' },
+                                    { key: 'B', text: 'Now what' },
+                                    { key: 'C', text: 'Because of' }
+                                ],
+                                answer: 'A',
+                                focus: '連詞 Now that',
+                                grammarTag: '小考考卷第(3)題',
+                                explanation: '<b>Now that...</b> 為片語連接詞，意為「既然/既然你提到了...」。後接完整子句。',
+                                translation: '既然你提到了，我覺得市中心的麵包店好像要找人。'
+                            },
+                            {
+                                id: 10,
+                                number: 10,
+                                prompt: "...replace their old cashier who recently [ (10) ___ ].",
+                                options: [
+                                    { key: 'A', text: 'resign' },
+                                    { key: 'B', text: 'resigned' },
+                                    { key: 'C', text: 'resigning' }
+                                ],
+                                answer: 'B',
+                                focus: '動詞時態 (過去式)',
+                                grammarTag: '課本重點',
+                                explanation: '句中有 <b>recently</b>（最近），且替換的是「已經離職的」收銀員，故用過去式 <b>resigned</b>。',
+                                translation: '替換最近離職的老收銀員。'
+                            },
+                            {
+                                id: 11,
+                                number: 11,
+                                prompt: "If you're interested [ (11) ___ ] bread and desserts...",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 be interested in',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>be interested in + N/V-ing</b> 表示「對...感興趣」。',
+                                translation: '如果你對麵包和甜點感興趣的話。'
+                            },
+                            {
+                                id: 12,
+                                number: 12,
+                                prompt: "...it might be a good fit [ (12) ___ ] you.",
+                                options: [
+                                    { key: 'A', text: 'to' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'with' }
+                                ],
+                                answer: 'B',
+                                focus: '介係詞 a good fit for',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>be a good fit for someone</b> 意為「非常適合某人」。',
+                                translation: '這工作可能非常適合你。'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'u1-conversation',
+                        unit: 'Unit 1',
+                        unitKey: 'unit1',
+                        section: 'Conversation',
+                        title: 'Job Interview Call (Conversation p.11)',
+                        passageHtml: `Peter: Hi, Sam. I'm calling <span class="purple-highlight">(13) ___</span> a job opening that I saw on your company's website.
+Sam: Are you referring <span class="purple-highlight">(14) ___</span> the ad for stockbroker trainees? Do you have any experience working <span class="purple-highlight">(15) ___</span> the financial sector?
+Peter: No, but I study economics <span class="purple-highlight">(16) ___</span> university.
+Sam: That's fine. The best thing to do is to submit a copy of your resume <span class="purple-highlight">(17) ___</span> our website. If we think you are qualified, we will call you to set <span class="purple-highlight">(18) ___</span> an interview. Be sure to list two personal references so we can get a better idea <span class="purple-highlight">(19) ___</span> your character.
+Peter: How can I go <span class="purple-highlight">(20) ___</span> applying for the position?`,
+                        questions: [
+                            {
+                                id: 13,
+                                number: 13,
+                                prompt: "I'm calling [ (13) ___ ] a job opening...",
+                                options: [
+                                    { key: 'A', text: 'about' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 call about',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>call about + N</b> 表示「打電話詢問/洽談有關...的事宜」。',
+                                translation: '我打電話來是想詢問貴公司網站上的工作職缺。'
+                            },
+                            {
+                                id: 14,
+                                number: 14,
+                                prompt: "Are you referring [ (14) ___ ] the ad for stockbroker trainees?",
+                                options: [
+                                    { key: 'A', text: 'to' },
+                                    { key: 'B', text: 'with' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 refer to',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>refer to + N</b> 表示「提及、指的是...」。',
+                                translation: '您指的是股票經紀培訓生（實習生）的廣告嗎？'
+                            },
+                            {
+                                id: 15,
+                                number: 15,
+                                prompt: "Do you have any experience working [ (15) ___ ] the financial sector?",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 in the sector',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在某個「行業/領域」工作，介係詞使用 <b>in</b> (in the financial sector)。',
+                                translation: '您有在金融領域工作的經驗嗎？'
+                            },
+                            {
+                                id: 16,
+                                number: 16,
+                                prompt: "No, but I study economics [ (16) ___ ] university.",
+                                options: [
+                                    { key: 'A', text: 'at' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 at university',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在大學就讀習慣搭配 <b>at university</b>（美式亦可用 in college）。',
+                                translation: '沒有，但我確實在大學主修經濟學。'
+                            },
+                            {
+                                id: 17,
+                                number: 17,
+                                prompt: "...submit a copy of your resume [ (17) ___ ] our website.",
+                                options: [
+                                    { key: 'A', text: 'on' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 on website',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在網站/網路上，介係詞一律使用 <b>on</b> (on our website)。',
+                                translation: '在我們的網站上提交一份您的履歷。'
+                            },
+                            {
+                                id: 18,
+                                number: 18,
+                                prompt: "...we will call you to set [ (18) ___ ] an interview.",
+                                options: [
+                                    { key: 'A', text: 'up' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'off' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 set up',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>set up an interview</b> 表示「安排/約定面試」。',
+                                translation: '我們將會打電話給您安排面試。'
+                            },
+                            {
+                                id: 19,
+                                number: 19,
+                                prompt: "...so we can get a better idea [ (19) ___ ] your character.",
+                                options: [
+                                    { key: 'A', text: 'of' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'about' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 idea of',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>get an idea of something</b> 表示「了解某事物的概念/輪廓/特質」。',
+                                translation: '這樣我們能更好地了解您的人格特點。'
+                            },
+                            {
+                                id: 20,
+                                number: 20,
+                                prompt: "How can I go [ (20) ___ ] applying for the position?",
+                                options: [
+                                    { key: 'A', text: 'about' },
+                                    { key: 'B', text: 'with' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 go about V-ing',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>go about + V-ing</b> 表示「著手進行/開始做某事」。',
+                                translation: '我該如何著手申請這個職缺呢？'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'u1-reading',
+                        unit: 'Unit 1',
+                        unitKey: 'unit1',
+                        section: 'Reading',
+                        title: 'Job Posting (Reading p.16)',
+                        passageHtml: `Qualifications:
+• Ability to work <span class="purple-highlight">(21) ___</span> a high-pressure environment.
+• Knowledge <span class="purple-highlight">(22) ___</span> consumer electronics or a willingness to learn.
+• 8+ years' experience <span class="purple-highlight">(23) ___</span> a sales professional.
+• Bachelor's Degree preferred <span class="purple-highlight">(24) ___</span> Economics or Business.
+• Guide employees <span class="purple-highlight">(25) ___</span> their monthly goals.
+• Operate <span class="purple-highlight">(26) ___</span> the limits of a tight budget.`,
+                        questions: [
+                            {
+                                id: 21,
+                                number: 21,
+                                prompt: "Ability to work [ (21) ___ ] a high-pressure environment",
+                                options: [
+                                    { key: 'A', text: 'for' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'B',
+                                focus: '介係詞 in an environment',
+                                grammarTag: '小考考卷第(6)題',
+                                explanation: '在某種「環境」中工作，介係詞使用 <b>in</b> (in a high-pressure environment)。',
+                                translation: '能在高壓環境下工作的能力。'
+                            },
+                            {
+                                id: 22,
+                                number: 22,
+                                prompt: "Knowledge [ (22) ___ ] consumer electronics...",
+                                options: [
+                                    { key: 'A', text: 'of' },
+                                    { key: 'B', text: 'about' },
+                                    { key: 'C', text: 'in' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 knowledge of',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '對某專業領域的「知識」，名詞固定搭配 <b>knowledge of + N</b>。',
+                                translation: '具備消費性電子產品之相關知識。'
+                            },
+                            {
+                                id: 23,
+                                number: 23,
+                                prompt: "8+ years' experience [ (23) ___ ] a sales professional...",
+                                options: [
+                                    { key: 'A', text: 'with' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'as' }
+                                ],
+                                answer: 'C',
+                                focus: '介係詞 experience as + 身份',
+                                grammarTag: '小考考卷第(7)題',
+                                explanation: '作為某種「身分/職位」的經驗，介係詞使用 <b>as</b> (experience as a sales professional)。',
+                                translation: '具備 8 年以上擔任銷售專業人員之經驗。'
+                            },
+                            {
+                                id: 24,
+                                number: 24,
+                                prompt: "Bachelor's Degree in Business Administration [ (24) ___ ].",
+                                options: [
+                                    { key: 'A', text: 'preferring' },
+                                    { key: 'B', text: 'preference' },
+                                    { key: 'C', text: 'preferred' }
+                                ],
+                                answer: 'C',
+                                focus: '被動分詞 preferred',
+                                grammarTag: '小考考卷第(8)題',
+                                explanation: '表示「優先考慮/者佳」，使用過去分詞 <b>preferred</b> 作補充修飾。',
+                                translation: '商業管理學士學位者尤佳。'
+                            },
+                            {
+                                id: 25,
+                                number: 25,
+                                prompt: "Guide employees [ (25) ___ ] meet their monthly goals.",
+                                options: [
+                                    { key: 'A', text: 'to' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'in' }
+                                ],
+                                answer: 'A',
+                                focus: '不定詞 guide sb to V',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>guide someone to + V</b> 表示「引導/指導某人達到...」。',
+                                translation: '指導員工達成其每月目標。'
+                            },
+                            {
+                                id: 26,
+                                number: 26,
+                                prompt: "Operate [ (26) ___ ] the limits of a tight budget.",
+                                options: [
+                                    { key: 'A', text: 'within' },
+                                    { key: 'B', text: 'into' },
+                                    { key: 'C', text: 'inside' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 within limits',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在預算「限制範圍之內」，介係詞精準使用 <b>within</b> (within the limits)。',
+                                translation: '在緊縮預算的限制範圍內營運操作。'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'u1-grammar',
+                        unit: 'Unit 1',
+                        unitKey: 'unit1',
+                        section: 'Grammar',
+                        title: 'Present Simple 3rd Person Singular Rules (Grammar p.12)',
+                        passageHtml: `Every weekend, Sarah <span class="purple-highlight">(27) ___</span> (play) the piano. Her brother, Jake, <span class="purple-highlight">(28) ___</span> (fix) his bike in the garage. Their mother often <span class="purple-highlight">(29) ___</span> (worry) about him, but Jake <span class="purple-highlight">(30) ___</span> (enjoy) cycling. Sarah's father usually <span class="purple-highlight">(31) ___</span> (carry) the heavy grocery bags while her mother <span class="purple-highlight">(32) ___</span> (plan) weekly meals.`,
+                        questions: [
+                            {
+                                id: 27,
+                                number: 27,
+                                prompt: "Sarah [ (27) ___ ] (play) the piano in the mornings...",
+                                options: [
+                                    { key: 'A', text: 'play' },
+                                    { key: 'B', text: 'plays' },
+                                    { key: 'C', text: 'plaies' }
+                                ],
+                                answer: 'B',
+                                focus: '母音+y結尾加s',
+                                grammarTag: '小考Part II大題',
+                                explanation: '動詞為母音+y結尾 (play)，主詞為第三人稱單數 (Sarah)，規則為直接加 <b>s</b> -> <b>plays</b>。',
+                                translation: '莎拉每週末早上都在彈鋼琴。'
+                            },
+                            {
+                                id: 28,
+                                number: 28,
+                                prompt: "Jake [ (28) ___ ] (fix) his bike in the garage...",
+                                options: [
+                                    { key: 'A', text: 'fixes' },
+                                    { key: 'B', text: 'fixs' },
+                                    { key: 'C', text: 'fixing' }
+                                ],
+                                answer: 'A',
+                                focus: 'x結尾加es',
+                                grammarTag: '小考Part II大題',
+                                explanation: '動詞字尾為 x (fix)，第三人稱單數應加 <b>es</b> -> <b>fixes</b>。',
+                                translation: '傑克在車庫修理他的自行車。'
+                            },
+                            {
+                                id: 29,
+                                number: 29,
+                                prompt: "Their mother often [ (29) ___ ] (worry) about him...",
+                                options: [
+                                    { key: 'A', text: 'worrys' },
+                                    { key: 'B', text: 'worries' },
+                                    { key: 'C', text: 'worry' }
+                                ],
+                                answer: 'B',
+                                focus: '子音+y去y加ies',
+                                grammarTag: '小考Part II大題',
+                                explanation: '動詞字尾為子音+y (worry)，第三人稱單數變更字尾為 <b>ies</b> -> <b>worries</b>。',
+                                translation: '他們的媽媽經常擔心他。'
+                            },
+                            {
+                                id: 30,
+                                number: 30,
+                                prompt: "...but Jake [ (30) ___ ] (enjoy) the independence of cycling.",
+                                options: [
+                                    { key: 'A', text: 'enjoys' },
+                                    { key: 'B', text: 'enjoyes' },
+                                    { key: 'C', text: 'enjoies' }
+                                ],
+                                answer: 'A',
+                                focus: '母音+y結尾加s',
+                                grammarTag: '小考Part II大題',
+                                explanation: '動詞為母音+y (enjoy)，直接加 <b>s</b> -> <b>enjoys</b>。',
+                                translation: '但傑克很享受騎車的獨立與刺激感。'
+                            },
+                            {
+                                id: 31,
+                                number: 31,
+                                prompt: "Sarah's father usually [ (31) ___ ] (carry) the heavy bags...",
+                                options: [
+                                    { key: 'A', text: 'carrys' },
+                                    { key: 'B', text: 'carries' },
+                                    { key: 'C', text: 'carrying' }
+                                ],
+                                answer: 'B',
+                                focus: '子音+y去y加ies',
+                                grammarTag: '小考Part II大題',
+                                explanation: '動詞為子音+y (carry)，去y加 <b>ies</b> -> <b>carries</b>。',
+                                translation: '莎拉的父親通常提著沉重的袋子。'
+                            },
+                            {
+                                id: 32,
+                                number: 32,
+                                prompt: "...while her mother carefully [ (32) ___ ] (plan) the meals.",
+                                options: [
+                                    { key: 'A', text: 'plan' },
+                                    { key: 'B', text: 'plans' },
+                                    { key: 'C', text: 'plannings' }
+                                ],
+                                answer: 'B',
+                                focus: '一般動詞單數加s',
+                                grammarTag: '小考Part II大題',
+                                explanation: '主詞為第三人稱單數 (her mother)，現在簡單式直接加 <b>s</b> -> <b>plans</b>。',
+                                translation: '而她母親則仔細地規劃下一週的餐食。'
+                            }
+                        ]
+                    },
 
-            let correctCount = 0;
-            let total = targetPassage.questions.length;
+                    // ==========================================
+                    // UNIT 2: INTRODUCTIONS AND INTERVIEWS
+                    // ==========================================
+                    {
+                        id: 'u2-listening',
+                        unit: 'Unit 2',
+                        unitKey: 'unit2',
+                        section: 'Listening',
+                        title: 'Job Interview Conversation (Listening p.20-21)',
+                        passageHtml: `Bob: My family relocated <span class="purple-highlight">(33) ___</span> Miami when I was 12.
+Melissa: On your resume, it says that you majored <span class="purple-highlight">(34) ___</span> economics at Yale.
+Bob: That's correct.
+Melissa: How would you describe your attitude <span class="purple-highlight">(35) ___</span> work?
+Bob: I'm very passionate <span class="purple-highlight">(36) ___</span> my career. It's the top priority <span class="purple-highlight">(37) ___</span> my life.
+Craig: You seem a little nervous. It's an entry-level position <span class="purple-highlight">(38) ___</span> a well-known local business. Which job are you applying <span class="purple-highlight">(39) ___</span>?
+Angeline: How many hours per week would I be required <span class="purple-highlight">(40) ___</span> work?`,
+                        questions: [
+                            {
+                                id: 33,
+                                number: 33,
+                                prompt: "My family relocated [ (33) ___ ] Miami when I was 12.",
+                                options: [
+                                    { key: 'A', text: 'to' },
+                                    { key: 'B', text: 'at' },
+                                    { key: 'C', text: 'in' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 relocate to',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>relocate to + 地點</b> 表示「搬遷/遷移至某地」。',
+                                translation: '在我12歲時，我們全家搬到了邁阿密。'
+                            },
+                            {
+                                id: 34,
+                                number: 34,
+                                prompt: "...it says that you majored [ (34) ___ ] economics.",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 major in',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在大學「主修某學科」，固定搭配 <b>major in + 科目</b>。',
+                                translation: '履歷上顯示你在耶魯大學主修經濟學。'
+                            },
+                            {
+                                id: 35,
+                                number: 35,
+                                prompt: "How would you describe your attitude [ (35) ___ ] work?",
+                                options: [
+                                    { key: 'A', text: 'towards' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'with' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 attitude towards',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '對待工作或人事的「態度」，介係詞搭配 <b>towards</b>（或 toward）。',
+                                translation: '你會如何描述你的工作態度？'
+                            },
+                            {
+                                id: 36,
+                                number: 36,
+                                prompt: "I'm very passionate [ (36) ___ ] my career.",
+                                options: [
+                                    { key: 'A', text: 'about' },
+                                    { key: 'B', text: 'with' },
+                                    { key: 'C', text: 'in' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 be passionate about',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>be passionate about + N</b> 表示「對...充滿熱情」。',
+                                translation: '我對我的事業充滿熱情。'
+                            },
+                            {
+                                id: 37,
+                                number: 37,
+                                prompt: "It's the top priority [ (37) ___ ] my life.",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 priority in my life',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '人生中的「首要任務/第一優先」，使用 <b>priority in my life</b>。',
+                                translation: '這是我人生中最首要的事情。'
+                            },
+                            {
+                                id: 38,
+                                number: 38,
+                                prompt: "It's an entry-level position [ (38) ___ ] a well-known local business.",
+                                options: [
+                                    { key: 'A', text: 'with' },
+                                    { key: 'B', text: 'at' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 position with a company',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在某家公司任職或職位，介係詞常用 <b>position with [company]</b>。',
+                                translation: '這是知名在地企業的一個初階/入門職缺。'
+                            },
+                            {
+                                id: 39,
+                                number: 39,
+                                prompt: "Which job are you applying [ (39) ___ ]?",
+                                options: [
+                                    { key: 'A', text: 'for' },
+                                    { key: 'B', text: 'to' },
+                                    { key: 'C', text: 'with' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 apply for',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>apply for + 職缺</b> 表示「應徵/申請某工作」。',
+                                translation: '你正在應徵哪一個職缺呢？'
+                            },
+                            {
+                                id: 40,
+                                number: 40,
+                                prompt: "How many hours per week would I be required [ (40) ___ ] work?",
+                                options: [
+                                    { key: 'A', text: 'to' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'in' }
+                                ],
+                                answer: 'A',
+                                focus: '被動語態 be required to V',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '被動句型 <b>be required to + 原形動詞</b> 表示「被要求做某事」。',
+                                translation: '我每週會被要求工作多少個小時？'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'u2-reading',
+                        unit: 'Unit 2',
+                        unitKey: 'unit2',
+                        section: 'Reading',
+                        title: 'Follow-up Email (Reading p.26)',
+                        passageHtml: `Dear Shawna,
+It was nice to meet with you yesterday. I think there are some exciting things <span class="purple-highlight">(41) ___</span> the horizon for the company. I truly believe that with the right team it is possible to take the company <span class="purple-highlight">(42) ___</span> new heights.
+I believe that the Indian market would be a better entry point <span class="purple-highlight">(43) ___</span> China because there is less competition. I think with my previous experience <span class="purple-highlight">(44) ___</span> international business, I would be the right person. I wish you the best <span class="purple-highlight">(45) ___</span> luck!`,
+                        questions: [
+                            {
+                                id: 41,
+                                number: 41,
+                                prompt: "...there are some exciting things [ (41) ___ ] the horizon for the company.",
+                                options: [
+                                    { key: 'A', text: 'on' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '片語 on the horizon',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>on the horizon</b> 意為「即將發生的、指日可待的」。',
+                                translation: '對於公司來說，有一些令人興奮的前景即將到来。'
+                            },
+                            {
+                                id: 42,
+                                number: 42,
+                                prompt: "...it is possible to take the company [ (42) ___ ] new heights.",
+                                options: [
+                                    { key: 'A', text: 'to' },
+                                    { key: 'B', text: 'into' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '片語 take to new heights',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>take [company] to new heights</b> 意為「帶領公司邁向新高度/再創高峰」。',
+                                translation: '帶領公司邁向新的高度是完全可能的。'
+                            },
+                            {
+                                id: 43,
+                                number: 43,
+                                prompt: "...a better entry point [ (43) ___ ] China...",
+                                options: [
+                                    { key: 'A', text: 'than' },
+                                    { key: 'B', text: 'to' },
+                                    { key: 'C', text: 'over' }
+                                ],
+                                answer: 'A',
+                                focus: '比較級 entry point than',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '前有比較級形容詞 <b>a better entry point</b>，後續比較對象搭配連詞 <b>than</b>。',
+                                translation: '印度市場會是比中國更好的切入點。'
+                            },
+                            {
+                                id: 44,
+                                number: 44,
+                                prompt: "...with my previous experience [ (44) ___ ] international business...",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 experience in + 領域',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在某個「專業領域/產業」的經驗，介係詞固定使用 <b>in</b> (experience in international business)。',
+                                translation: '憑藉我過往在國際商務領域的經驗。'
+                            },
+                            {
+                                id: 45,
+                                number: 45,
+                                prompt: "Best [ (45) ___ ] luck!",
+                                options: [
+                                    { key: 'A', text: 'of' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'in' }
+                                ],
+                                answer: 'A',
+                                focus: '祝福語 Best of luck',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>Best of luck!</b> 為標準英語祝福語，意為「祝你一切順利/祝你好運！」。',
+                                translation: '祝您一切順利！'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'u2-grammar',
+                        unit: 'Unit 2',
+                        unitKey: 'unit2',
+                        section: 'Grammar',
+                        title: 'Future Forms: Will vs. Be Going To (Grammar p.22 / 簡報頁面)',
+                        passageHtml: `Rule Review:
+• <b>be going to</b>: 事先已決定(計畫) 或 現在看的到的跡象證據 (Look! 烏雲)。
+• <b>will</b>: 當場決定、承諾 (promise) 或 個人推測看法 (I think... / I hope...)。`,
+                        questions: [
+                            {
+                                id: 46,
+                                number: 46,
+                                prompt: "'I'm thirsty.' 'I [ (46) ___ ] buy you a Coke.' (當場決定)",
+                                options: [
+                                    { key: 'A', text: 'will' },
+                                    { key: 'B', text: 'am going to' },
+                                    { key: 'C', text: 'would' }
+                                ],
+                                answer: 'A',
+                                focus: 'will 用法：當場決定/主動提供協助',
+                                grammarTag: '簡報圖表對比重點',
+                                explanation: '說話當下立刻做出的決定 (On-the-spot decision) 或主動幫忙，須使用 <b>will</b>。',
+                                translation: '「我口渴了。」「我現在去買瓶可樂給你。」'
+                            },
+                            {
+                                id: 47,
+                                number: 47,
+                                prompt: "Look at the dark clouds in the sky! It [ (47) ___ ] rain soon.",
+                                options: [
+                                    { key: 'A', text: 'will' },
+                                    { key: 'B', text: 'is going to' },
+                                    { key: 'C', text: 'rains' }
+                                ],
+                                answer: 'B',
+                                focus: 'be going to 用法：眼前的跡象預測',
+                                grammarTag: '簡報圖表對比重點',
+                                explanation: '根據眼前「看得見的證據/跡象」(Look at the dark clouds!) 做出的推測，須使用 <b>be going to</b>。',
+                                translation: '看天空中的烏雲！馬上就要下雨了。'
+                            },
+                            {
+                                id: 48,
+                                number: 48,
+                                prompt: "I promise I [ (48) ___ ] tell anyone your secret.",
+                                options: [
+                                    { key: 'A', text: "won't" },
+                                    { key: 'B', text: "am not going to" },
+                                    { key: 'C', text: "don't" }
+                                ],
+                                answer: 'A',
+                                focus: 'will 用法：承諾 Promise',
+                                grammarTag: '簡報圖表對比重點',
+                                explanation: '表達承諾 (promise)，標準語法使用 <b>will / won\'t</b>。',
+                                translation: '我承諾我絕不會跟任何人透露你的秘密。'
+                            },
+                            {
+                                id: 49,
+                                number: 49,
+                                prompt: "We bought the tickets yesterday. We [ (49) ___ ] watch a movie tonight.",
+                                options: [
+                                    { key: 'A', text: 'will' },
+                                    { key: 'B', text: 'are going to' },
+                                    { key: 'C', text: 'would' }
+                                ],
+                                answer: 'B',
+                                focus: 'be going to 用法：事先計畫好的安排',
+                                grammarTag: '簡報圖表對比重點',
+                                explanation: '說話之前就已經決定好的「計畫/安排」(already decided plan)，使用 <b>be going to</b>。',
+                                translation: '我們昨天買好票了。我們今晚打算去看電影。'
+                            }
+                        ]
+                    },
 
-            targetPassage.questions.forEach(q => {
-                const userChoice = userAnswers[q.id];
-                const isCorrect = userChoice === q.answer;
-
-                const qCard = document.getElementById(`q-card-${q.id}`);
-                const expBox = document.getElementById(`exp-${q.id}`);
-                const blankElem = document.getElementById(`blank-${q.id}`);
-
-                if (expBox) {
-                    expBox.classList.remove('hidden');
-                    if (isCorrect) {
-                        correctCount++;
-                        expBox.className = "mt-3 p-4 rounded-xl text-xs leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-900";
-                        expBox.innerHTML = `
-                            <div class="font-bold text-emerald-700 flex items-center gap-1.5 mb-1 text-sm">
-                                <i class="fa-solid fa-circle-check"></i> 回答正確！
-                            </div>
-                            ${q.explanation}
-                        `;
-                        if (blankElem) {
-                            blankElem.className = "blank-highlight blank-correct";
-                            blankElem.innerText = `(${q.blankNum}) ${q.options[q.answer]}`;
-                        }
-                    } else {
-                        expBox.className = "mt-3 p-4 rounded-xl text-xs leading-relaxed bg-rose-50 border border-rose-200 text-rose-900";
-                        expBox.innerHTML = `
-                            <div class="font-bold text-rose-700 flex items-center gap-1.5 mb-1 text-sm">
-                                <i class="fa-solid fa-circle-xmark"></i> 答錯囉！正確答案是：<span class="underline font-extrabold">${q.options[q.answer]}</span>
-                            </div>
-                            ${q.explanation}
-                        `;
-                        if (blankElem) {
-                            blankElem.className = "blank-highlight blank-incorrect";
-                            blankElem.innerText = `(${q.blankNum}) ${q.options[q.answer]}`;
-                        }
+                    // ==========================================
+                    // UNIT 3: BREAKING THE ICE
+                    // ==========================================
+                    {
+                        id: 'u3-listening',
+                        unit: 'Unit 3',
+                        unitKey: 'unit3',
+                        section: 'Listening',
+                        title: 'Breaking the Ice Dialogues (Listening p.30)',
+                        passageHtml: `Geoff: I always feel nervous whenever I interact <span class="purple-highlight">(50) ___</span> the boss.
+Candy: He just gave some instructions <span class="purple-highlight">(51) ___</span> how I should design my presentation. I am working <span class="purple-highlight">(52) ___</span> an idea for a movie about friends who communicate <span class="purple-highlight">(53) ___</span> evil spirits. It's <span class="purple-highlight">(54) ___</span> its early stages.
+Geoff: I've heard Hawaii is beautiful. I really envy <span class="purple-highlight">(55) ___</span>!
+Candy: One of my interests outside <span class="purple-highlight">(56) ___</span> work is creative writing. So, I signed <span class="purple-highlight">(57) ___</span> for a class <span class="purple-highlight">(58) ___</span> a community college.`,
+                        questions: [
+                            {
+                                id: 50,
+                                number: 50,
+                                prompt: "...whenever I interact [ (50) ___ ] him.",
+                                options: [
+                                    { key: 'A', text: 'with' },
+                                    { key: 'B', text: 'to' },
+                                    { key: 'C', text: 'for' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 interact with',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>interact with someone</b> 表示「與某人互動/交流」。',
+                                translation: '每當我和老闆互動時，我都感到很緊張。'
+                            },
+                            {
+                                id: 51,
+                                number: 51,
+                                prompt: "He gave some instructions [ (51) ___ ] how I should design my presentation.",
+                                options: [
+                                    { key: 'A', text: 'about' },
+                                    { key: 'B', text: 'for' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 instructions about',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '關於某事的「指示/說明」，搭配 <b>instructions about + wh-clause</b>。',
+                                translation: '他剛剛給了我一些關於我該如何設計簡報的指示。'
+                            },
+                            {
+                                id: 52,
+                                number: 52,
+                                prompt: "I am working [ (52) ___ ] an idea for a movie...",
+                                options: [
+                                    { key: 'A', text: 'on' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 work on',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>work on + N</b> 表示「致力於/正在構思或製作某專案」。',
+                                translation: '我目前正在構思一個電影劇本點子。'
+                            },
+                            {
+                                id: 53,
+                                number: 53,
+                                prompt: "...a horror movie about friends who communicate [ (53) ___ ] evil spirits.",
+                                options: [
+                                    { key: 'A', text: 'with' },
+                                    { key: 'B', text: 'to' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 communicate with',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>communicate with someone/something</b> 表示「與...溝通/交流」。',
+                                translation: '一部關於一群朋友與惡靈溝通的恐怖片。'
+                            },
+                            {
+                                id: 54,
+                                number: 54,
+                                prompt: "It's [ (54) ___ ] its early stages.",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 in early stages',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '處於某個「階段」，介係詞精準搭配 <b>in its early stages</b>。',
+                                translation: '目前還處於早期籌備階段。'
+                            },
+                            {
+                                id: 55,
+                                number: 55,
+                                prompt: "I really envy [ (55) ___ ]!",
+                                options: [
+                                    { key: 'A', text: 'you' },
+                                    { key: 'B', text: 'to you' },
+                                    { key: 'C', text: 'with you' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞 envy 為及物動詞',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>envy</b> 為及物動詞，後面直接加受詞 (envy you)，<b>不可加介係詞 to 或 with</b>。',
+                                translation: '我真的好羨慕你喔！'
+                            },
+                            {
+                                id: 56,
+                                number: 56,
+                                prompt: "One of my interests outside [ (56) ___ ] work is creative writing.",
+                                options: [
+                                    { key: 'A', text: 'of' },
+                                    { key: 'B', text: 'from' },
+                                    { key: 'C', text: 'without' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 outside of',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>outside of work</b> 表示「在工作之外」。',
+                                translation: '我在工作之外的興趣之一是創意寫作。'
+                            },
+                            {
+                                id: 57,
+                                number: 57,
+                                prompt: "So, I signed [ (57) ___ ] for a class...",
+                                options: [
+                                    { key: 'A', text: 'up' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 sign up for',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>sign up for a class</b> 表示「報名參加課程」。',
+                                translation: '所以我報名了一門課程。'
+                            },
+                            {
+                                id: 58,
+                                number: 58,
+                                prompt: "...at a class [ (58) ___ ] a community college.",
+                                options: [
+                                    { key: 'A', text: 'at' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'on' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 at a college',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '在社區大學，地點介係詞使用 <b>at a community college</b>。',
+                                translation: '在一所社區大學上了課。'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'u3-conversation',
+                        unit: 'Unit 3',
+                        unitKey: 'unit3',
+                        section: 'Conversation',
+                        title: 'Small Talk & Weather (Conversation p.31)',
+                        passageHtml: `Sam: Lovely weather we're having lately. It's warmer than it usually is this time <span class="purple-highlight">(59) ___</span> year.
+Geoff: As a matter <span class="purple-highlight">(60) ___</span> fact, I am. I checked online and it says that the bus is running <span class="purple-highlight">(61) ___</span>.
+Sam: These things happen every now and <span class="purple-highlight">(62) ___</span>. Are you a sports fan by any <span class="purple-highlight">(63) ___</span>?
+Geoff: Yes, I attended a soccer game last Sunday.
+Sam: Wasn't it incredible? In my opinion, it was worth every <span class="purple-highlight">(64) ___</span>.
+Geoff: We seem to have a lot <span class="purple-highlight">(65) ___</span> common. We should definitely hang <span class="purple-highlight">(66) ___</span> sometime.`,
+                        questions: [
+                            {
+                                id: 59,
+                                number: 59,
+                                prompt: "It's warmer than it usually is this time [ (59) ___ ] year.",
+                                options: [
+                                    { key: 'A', text: 'of' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'for' }
+                                ],
+                                answer: 'A',
+                                focus: '習慣用語 this time of year',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>this time of year</b> 為固定習慣用語，意為「每年這個時候/時節」。',
+                                translation: '天氣比每年這個時候通常的樣子還要溫暖。'
+                            },
+                            {
+                                id: 60,
+                                number: 60,
+                                prompt: "As a matter [ (60) ___ ] fact, I am.",
+                                options: [
+                                    { key: 'A', text: 'of' },
+                                    { key: 'B', text: 'in' },
+                                    { key: 'C', text: 'for' }
+                                ],
+                                answer: 'A',
+                                focus: '片語 as a matter of fact',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>As a matter of fact</b> 意為「事實上/實際上」。',
+                                translation: '事實上，我確實是在等公車。'
+                            },
+                            {
+                                id: 61,
+                                number: 61,
+                                prompt: "...it says that the bus is running [ (61) ___ ].",
+                                options: [
+                                    { key: 'A', text: 'late' },
+                                    { key: 'B', text: 'lately' },
+                                    { key: 'C', text: 'lateness' }
+                                ],
+                                answer: 'A',
+                                focus: '副詞/片語 run late',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>run late</b> 表示「（車班/行程）誤點、延誤」。lately 意為「最近」，不符合語意。',
+                                translation: '網路上記述公車目前誤點中。'
+                            },
+                            {
+                                id: 62,
+                                number: 62,
+                                prompt: "These things happen every now and [ (62) ___ ].",
+                                options: [
+                                    { key: 'A', text: 'again' },
+                                    { key: 'B', text: 'once' },
+                                    { key: 'C', text: 'always' }
+                                ],
+                                answer: 'A',
+                                focus: '習語 every now and again',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>every now and again</b> 為固定片語，意為「偶爾、時不時」（等於 occasionally）。',
+                                translation: '這種事偶爾就會發生。'
+                            },
+                            {
+                                id: 63,
+                                number: 63,
+                                prompt: "Are you a sports fan by any [ (63) ___ ]?",
+                                options: [
+                                    { key: 'A', text: 'chance' },
+                                    { key: 'B', text: 'change' },
+                                    { key: 'C', text: 'choice' }
+                                ],
+                                answer: 'A',
+                                focus: '片語 by any chance',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>by any chance</b> 意為「難道/該不會/有可能嗎？」，常用於禮貌詢問。',
+                                translation: '你該不會也是個體育迷吧？'
+                            },
+                            {
+                                id: 64,
+                                number: 64,
+                                prompt: "In my opinion, it was worth every [ (64) ___ ].",
+                                options: [
+                                    { key: 'A', text: 'penny' },
+                                    { key: 'B', text: 'dollar' },
+                                    { key: 'C', text: 'cent' }
+                                ],
+                                answer: 'A',
+                                focus: '習語 worth every penny',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>be worth every penny</b> 為英語經典習語，意為「非常物超所值/花得每一分錢都值得」。',
+                                translation: '在我看來，那場比賽真的每一分錢都花得很值得。'
+                            },
+                            {
+                                id: 65,
+                                number: 65,
+                                prompt: "We seem to have a lot [ (65) ___ ] common.",
+                                options: [
+                                    { key: 'A', text: 'in' },
+                                    { key: 'B', text: 'on' },
+                                    { key: 'C', text: 'at' }
+                                ],
+                                answer: 'A',
+                                focus: '介係詞 in common',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>have a lot in common</b> 意為「有許多共同點/相同處」。',
+                                translation: '我們看起來有很多共同點呢。'
+                            },
+                            {
+                                id: 66,
+                                number: 66,
+                                prompt: "We should definitely hang [ (66) ___ ] sometime.",
+                                options: [
+                                    { key: 'A', text: 'out' },
+                                    { key: 'B', text: 'off' },
+                                    { key: 'C', text: 'away' }
+                                ],
+                                answer: 'A',
+                                focus: '動詞片語 hang out',
+                                grammarTag: '簡報紫色重點',
+                                explanation: '<b>hang out</b> 表示「出去聚聚、逛街聊聊天」。',
+                                translation: '我們有空一定要找時間一起出來聚聚！'
+                            }
+                        ]
                     }
-                }
-            });
+                ],
 
-            // Display Score message
-            const scoreMsg = document.getElementById(`score-msg-${passageId}`);
-            if (scoreMsg) {
-                const pct = Math.round((correctCount / total) * 100);
-                if (pct === 100) {
-                    scoreMsg.className = "text-sm font-bold text-emerald-600";
-                    scoreMsg.innerHTML = `<i class="fa-solid fa-star text-amber-400"></i> 太棒了！本篇得分：${correctCount} / ${total} (${pct}%)`;
-                } else {
-                    scoreMsg.className = "text-sm font-bold text-amber-600";
-                    scoreMsg.innerHTML = `本篇得分：${correctCount} / ${total} (${pct}%)`;
-                }
-            }
-
-            updateGlobalStats();
-        }
-
-        // Update Header Global Stats
-        function updateGlobalStats() {
-            let allQuestions = [];
-            Object.values(quizData).forEach(u => {
-                if (u.passages) {
-                    u.passages.forEach(p => {
-                        allQuestions.push(...p.questions);
+                get filteredQuestions() {
+                    let questions = [];
+                    this.groupedPassages.forEach(p => {
+                        questions.push(...p.questions);
                     });
-                }
-            });
+                    return questions;
+                },
 
-            const totalCount = allQuestions.length;
-            let answeredCount = 0;
-            let correctCount = 0;
+                get groupedPassages() {
+                    return this.passagesData.filter(p => {
+                        const matchUnit = this.selectedUnit === 'all' || p.unitKey === this.selectedUnit;
+                        const matchSection = this.selectedSection === 'all' || p.section === this.selectedSection;
+                        return matchUnit && matchSection;
+                    }).map(p => {
+                        // If filtering only incorrect
+                        if (this.onlyIncorrect) {
+                            return {
+                                ...p,
+                                questions: p.questions.filter(q => this.userAnswers[q.id] && this.userAnswers[q.id] !== q.answer)
+                            };
+                        }
+                        return p;
+                    }).filter(p => p.questions.length > 0);
+                },
 
-            allQuestions.forEach(q => {
-                if (userAnswers[q.id] !== undefined) {
-                    answeredCount++;
-                    if (userAnswers[q.id] === q.answer) {
-                        correctCount++;
+                get answeredCount() {
+                    const currentQIds = this.filteredQuestions.map(q => q.id);
+                    return Object.keys(this.userAnswers).filter(id => currentQIds.includes(Number(id))).length;
+                },
+
+                initApp() {
+                    // Initial setup
+                },
+
+                setMode(newMode) {
+                    this.mode = newMode;
+                    if (newMode === 'exam') {
+                        this.examSubmitted = false;
+                        this.onlyIncorrect = false;
                     }
-                }
-            });
+                },
 
-            document.getElementById('stat-answered').innerText = `${answeredCount} / ${totalCount}`;
-            const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
-            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+                selectAnswer(questionId, optionKey) {
+                    this.userAnswers[questionId] = optionKey;
+                },
+
+                getOptionClass(q, optKey) {
+                    const userAns = this.userAnswers[q.id];
+                    const isSelected = userAns === optKey;
+                    
+                    if (this.mode === 'practice' || this.examSubmitted) {
+                        if (!userAns) {
+                            return 'border-slate-200 bg-white text-slate-700 hover:border-indigo-400';
+                        }
+                        if (optKey === q.answer) {
+                            return 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-1 ring-emerald-500';
+                        }
+                        if (isSelected && optKey !== q.answer) {
+                            return 'border-rose-500 bg-rose-50 text-rose-900 font-bold ring-1 ring-rose-500';
+                        }
+                        return 'border-slate-200 bg-slate-50 text-slate-400 opacity-60';
+                    } else {
+                        // Exam mode unsubmitted
+                        if (isSelected) {
+                            return 'border-indigo-600 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500';
+                        }
+                        return 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300';
+                    }
+                },
+
+                submitExam() {
+                    const total = this.filteredQuestions.length;
+                    if (total === 0) return;
+
+                    let correct = 0;
+                    this.filteredQuestions.forEach(q => {
+                        if (this.userAnswers[q.id] === q.answer) {
+                            correct++;
+                        }
+                    });
+
+                    this.correctCount = correct;
+                    this.incorrectCount = total - correct;
+                    this.examScore = Math.round((correct / total) * 100);
+                    this.examSubmitted = true;
+
+                    // Scroll to top to see results
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                resetExam() {
+                    this.userAnswers = {};
+                    this.examSubmitted = false;
+                    this.onlyIncorrect = false;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                filterIncorrectOnly() {
+                    this.onlyIncorrect = true;
+                },
+
+                scrollToQuestion(id) {
+                    this.showNavModal = false;
+                    const el = document.getElementById(`q-card-${id}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+
+                getNavButtonClass(id) {
+                    const ans = this.userAnswers[id];
+                    const q = this.filteredQuestions.find(item => item.id === id);
+
+                    if ((this.mode === 'practice' || this.examSubmitted) && ans) {
+                        if (q && ans === q.answer) {
+                            return 'bg-emerald-500 text-white border-emerald-600';
+                        }
+                        return 'bg-rose-500 text-white border-rose-600';
+                    }
+
+                    if (ans) {
+                        return 'bg-indigo-600 text-white border-indigo-700';
+                    }
+                    return 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200';
+                }
+            }
         }
     </script>
 </body>
